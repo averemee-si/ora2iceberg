@@ -85,6 +85,25 @@ public class StructAndDataMover {
 	private final Table table;
 	private final long targetFileSize;
 
+	private static String jdbcTypeToString(int jdbcType) {
+		switch (jdbcType) {
+			case java.sql.Types.BOOLEAN: return "BOOLEAN";
+			case java.sql.Types.INTEGER: return "INTEGER";
+			case java.sql.Types.BIGINT: return "BIGINT";
+			case java.sql.Types.NUMERIC: return "NUMERIC";
+			case java.sql.Types.VARCHAR: return "VARCHAR";
+			case java.sql.Types.TIMESTAMP: return "TIMESTAMP";
+			case java.sql.Types.TIMESTAMP_WITH_TIMEZONE: return "TIMESTAMP_WITH_TIMEZONE";
+			case java.sql.Types.BINARY: return "BINARY";
+			case java.sql.Types.FLOAT: return "FLOAT";
+			case java.sql.Types.DOUBLE: return "DOUBLE";
+			case java.sql.Types.DATE: return "DATE";
+			case java.sql.Types.TIME: return "TIME";
+			default:
+				return "UNKNOWN(" + jdbcType + ")";
+		}
+	}
+
 	StructAndDataMover(
 			final DatabaseMetaData dbMetaData,
 			final String sourceSchema,
@@ -128,6 +147,9 @@ public class StructAndDataMover {
 			final Set<Integer> pkIds = new HashSet<>();
 			int columnId = 0;
 
+			OracleToIcebergTypeMapper.configureOverrides("ZONE_CONTROL:NUMBER=integer; %_ID:NUMBER=long; LOCATOR_%:NUMBER=decimal(38,0)");
+			OracleToIcebergTypeMapper.configureDefaultNumberFallback("decimal(38,10)");
+
 			final boolean idColumnsPresent = idColumnNames != null && !idColumnNames.isEmpty();
 			final ResultSet columns = dbMetaData.getColumns(sourceCatalog, sourceSchema, sourceObject, "%");
 			while (columns.next()) {
@@ -139,70 +161,88 @@ public class StructAndDataMover {
 				boolean addColumn = false;
 				final Type type;
 				final int mappedType;
-				switch (jdbcType) {
-					case java.sql.Types.BOOLEAN:
-						type = Types.BooleanType.get();
-						mappedType = java.sql.Types.BOOLEAN;
-						addColumn = true;
-						break;
-					case java.sql.Types.NUMERIC:
-						if (scale == 0 && precision < 10) {
-							mappedType = java.sql.Types.INTEGER;
-							type = Types.IntegerType.get();
-						} else if (scale == 0 && precision < 19) {
-							mappedType = java.sql.Types.BIGINT;
-							type = Types.LongType.get();
-						} else {
-							mappedType = java.sql.Types.NUMERIC;
-							//TODO
-							//TODO
-							//TODO
-							type = Types.DecimalType.of(
-									precision <= 0 ? 38 : precision,
-									scale < 0 ? 19: scale);
-						}
-						addColumn = true;
-						break;
-					case OracleTypes.BINARY_FLOAT:
-						mappedType = java.sql.Types.FLOAT;
-						type = Types.FloatType.get();
-						addColumn = true;
-						break;
-					case OracleTypes.BINARY_DOUBLE:
-						mappedType = java.sql.Types.DOUBLE;
-						type = Types.DoubleType.get();
-						addColumn = true;
-						break;
-					case java.sql.Types.VARCHAR:
-						mappedType = java.sql.Types.VARCHAR;
-						type = Types.StringType.get();
-						addColumn = true;
-						break;
-					case java.sql.Types.TIMESTAMP:
-						mappedType = java.sql.Types.TIMESTAMP;
-						type = Types.TimestampType.withoutZone();
-						addColumn = true;
-						break;
-					case OracleTypes.TIMESTAMPLTZ:
-					case OracleTypes.TIMESTAMPTZ:
-						mappedType = java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
-						type = Types.TimestampType.withZone();
-						addColumn = true;
-						break;
-					default:
-						mappedType = Integer.MAX_VALUE;
-						type = null;
-						LOGGER.warn("Skipping column {} with jdbcType {}", columnName, jdbcType);
-				}
+//TODO Testing before removal - Default Number and Override
+//				switch (jdbcType) {
+//					case java.sql.Types.BOOLEAN:
+//						type = Types.BooleanType.get();
+//						mappedType = java.sql.Types.BOOLEAN;
+//						addColumn = true;
+//						break;
+//					case java.sql.Types.NUMERIC:
+//						if (scale == 0 && precision < 10) {
+//							mappedType = java.sql.Types.INTEGER;
+//							type = Types.IntegerType.get();
+//						} else if (scale == 0 && precision < 19) {
+//							mappedType = java.sql.Types.BIGINT;
+//							type = Types.LongType.get();
+//						} else {
+//							mappedType = java.sql.Types.NUMERIC;
+//							//TODO
+//							//TODO
+//							//TODO
+//							type = Types.DecimalType.of(
+//									precision <= 0 ? 38 : precision,
+//									scale < 0 ? 19: scale);
+//						}
+//						addColumn = true;
+//						break;
+//					case OracleTypes.BINARY_FLOAT:
+//						mappedType = java.sql.Types.FLOAT;
+//						type = Types.FloatType.get();
+//						addColumn = true;
+//						break;
+//					case OracleTypes.BINARY_DOUBLE:
+//						mappedType = java.sql.Types.DOUBLE;
+//						type = Types.DoubleType.get();
+//						addColumn = true;
+//						break;
+//					case java.sql.Types.VARCHAR:
+//						mappedType = java.sql.Types.VARCHAR;
+//						type = Types.StringType.get();
+//						addColumn = true;
+//						break;
+//					case java.sql.Types.TIMESTAMP:
+//						mappedType = java.sql.Types.TIMESTAMP;
+//						type = Types.TimestampType.withoutZone();
+//						addColumn = true;
+//						break;
+//					case OracleTypes.TIMESTAMPLTZ:
+//					case OracleTypes.TIMESTAMPTZ:
+//						mappedType = java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
+//						type = Types.TimestampType.withZone();
+//						addColumn = true;
+//						break;
+//					default:
+//						mappedType = Integer.MAX_VALUE;
+//						type = null;
+//						LOGGER.warn("Skipping column {} with jdbcType {}", columnName, jdbcType);
+//				}
+
+				OracleToIcebergTypeMapper mapper = new OracleToIcebergTypeMapper(columnName, jdbcType, precision, scale);
+
+				mappedType = mapper.getMappedType();
+				type = mapper.getType();
+				int finalPrecision = mapper.getPrecision();
+				int finalScale = mapper.getScale();
+
+
+				LOGGER.info("Column map info {} {} {} {}.{}",
+						columnName, mappedType, jdbcTypeToString(mappedType), finalPrecision, finalScale);
+
+				addColumn = true;
 				if (addColumn) {
 					final int[] typeAndScale = new int[INFO_SIZE];
 					typeAndScale[TYPE_POS] = mappedType;
-					//TODO - precision!
-					typeAndScale[PRECISION_POS] = mappedType != java.sql.Types.NUMERIC ? Integer.MIN_VALUE :
-							precision <= 0 ? 38 : precision;
-					//TODO - scale!
-					typeAndScale[SCALE_POS] = mappedType != java.sql.Types.NUMERIC ? Integer.MIN_VALUE :
-							scale < 0 ? 19: scale;
+					//TODO - precision! Fixed
+					typeAndScale[PRECISION_POS] = finalPrecision;
+//TODO Testing before removal - Default Number and Override
+//					typeAndScale[PRECISION_POS] = mappedType != java.sql.Types.NUMERIC ? Integer.MIN_VALUE :
+//							precision <= 0 ? 38 : precision;
+					//TODO - scale! Fixed
+					typeAndScale[SCALE_POS] = finalScale;
+//TODO Testing before removal - Default Number and Override
+//					typeAndScale[SCALE_POS] = mappedType != java.sql.Types.NUMERIC ? Integer.MIN_VALUE :
+//							scale < 0 ? 19: scale;
 					typeAndScale[NULL_POS] = nullable ? 1 : 0;
 					columnsMap.put(columnName, typeAndScale);
 					columnId++;

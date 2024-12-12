@@ -32,7 +32,7 @@ gradle dependencyCheckAnalyze
 |-j
 |Oracle JDBC URL of source connection
 |Yes
-|jdbc:oracle:thin:@server\_url:port/TNS
+|jdbc:oracle:thin:@server_url:port/TNS
 |jdbc:oracle:thin:@PROD.COMPANY.COM:1521/PRD
 |**--source-user**
 |-u
@@ -48,46 +48,46 @@ gradle dependencyCheckAnalyze
 |tiger
 |**--source-schema**
 |-s
-|Source schema name. Uses \<source-user\> if not specified
+|Source schema name. Uses <source-user> if not specified
 |No
-|schema\_name
+|schema_name
 |scott
 |**--source-object**
 |-o
 |Name of source table/view, or SQL SELECT statement to query data
 |Yes
-|table\_name
+|table_name
 |EMP
 |**--where-clause**
 |-w
-|Optional WHERE clause for \<source-object\>, valid when pointing to table/view
+|Optional WHERE clause for <source-object>, valid when pointing to table/view
 |No
 |SQL WHERE clause
-|WHERE deptno \= 10
+|WHERE deptno = 10
 |**--add-rowid-to-iceberg**
 |-r
-|Adds ROWID pseudocolumn as VARCHAR column ORA\_ROW\_ID in destination when \<source-object\> points to RDBMS table
+|Adds ROWID pseudocolumn as VARCHAR column ORA_ROW_ID in destination when <source-object> points to RDBMS table
 |No
 |None (Flag)
 |(N/A)
 |**--rowid-column-name**
 |-n
-|Custom name for ROWID column, valid when \<source-object\> is a table
+|Custom name for ROWID column, valid when <source-object> is a table
 |No
-|column\_name
-|ROW\_ID\_CUSTOM
+|column_name
+|ROW_ID_CUSTOM
 |**--iceberg-catalog-implementation**
 |-C
 |Iceberg catalog implementation type (REST, JDBC, HADOOP, etc.) or custom class
 |Yes
-|CATALOG\_TYPE
+|CATALOG_TYPE
 |NESSIE
 |**--iceberg-catalog-name**
 |-N
 |Name of Apache Iceberg Catalog
 |Yes
-|CATALOG\_NAME
-|my\_catalog
+|CATALOG_NAME
+|my_catalog
 |**--iceberg-warehouse-location**
 |-W
 |Location of Apache Iceberg warehouse
@@ -96,7 +96,7 @@ gradle dependencyCheckAnalyze
 |"s3://bucket-ab"
 |**--iceberg-catalog-properties**
 |-P
-|Additional properties for Iceberg catalog implementation; \= as separator
+|Additional properties for Iceberg catalog implementation; = as separator
 |Yes
 |property=value
 |-Pio-impl=org.apache.iceberg.aws.s3.S3FileIO
@@ -105,31 +105,37 @@ gradle dependencyCheckAnalyze
 |Iceberg Catalog namespace, defaults to source schema if not specified
 |No
 |namespace
-|company\_namespace
+|company_namespace
 |**--iceberg-table-name**
 |-T
-|Iceberg table name, defaults to \<source-object\> if table/view
+|Iceberg table name, defaults to <source-object> if table/view
 |No
-|object\_name
+|object_name
 |EMP
 |**--iceberg-table-id-columns**
 |-I
 |Iceberg table identifier column names
 |No
-|column\_name
-|id\_column=identity
+|column_name
+|id_column=identity
 |**--iceberg-table-partition-by**
 |-B
-|Partitioning definition for table; \= for separator, , for additional params
+|Partitioning definition for table; = for separator, , for additional params
 |No
-|column=type\[,extra\]
-|-Bdeptno=identity \-Bempno=bucket,4
+|column=type[,extra]
+|-Bdeptno=identity -Bempno=bucket,4
 |**--iceberg-max-file-size**
 |-Z
 |Max file size (default: 134,217,728 bytes)
 |No
 |number
 |21376827123
+|**--upload-mode**
+|-m
+|Specifies the upload mode. Options: overwrite, append (default: overwrite)
+|No
+|option
+|-m=append
 |===
 
 
