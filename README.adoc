@@ -1,7 +1,14 @@
 image:https://img.shields.io/:license-apache-blue.svg[License,link=https://raw.githubusercontent.com/averemee-si/ora2iceberg/refs/heads/main/LICENSE]
 image:https://img.shields.io/maven-central/v/solutions.a2.oracle.iceberg/ora2iceberg[link=https://search.maven.org/artifact/solutions.a2.oracle.iceberg/ora2iceberg/0.8.1.7/jar?eh=]
 
-= ora2iceberg Data Pipe
+= ⚠️ This repository is archived ⚠️
+
+
+== 🏡 Ora2Iceberg has a new home and name! 
+
+
+=== You can find it at https://github.com/a2-solutions-team/rdbms2iceberg
+
 
 == 1. What is Ora2Iceberg?
 Ora2Iceberg is your go-to tool for simplifying data migration! It seamlessly transfers Oracle tables and views into Iceberg structures across various data lakes and warehouses—whether cloud-based or on-premises. Supporting a wide range of storage systems, including S3-compatible, HDFS, and local files, it integrates effortlessly with all Iceberg-compatible catalogs. This includes JDBC connections to popular free databases like PostgreSQL and MySQL, making complex Hadoop setups or Spark/Hive unnecessary. Seriously, who wants more Hadoop headaches?
